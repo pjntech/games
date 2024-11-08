@@ -10,21 +10,75 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
+            height: 100vh;
             margin: 0;
             padding: 20px;
             background-color: #4B0082; /* roxo */
             color: #FFFFFF; /* branco */
+            position: relative;
         }
 
         h1 {
             margin-bottom: 20px;
-            font-size: 1.5em; /* tamanho reduzido */
+            font-size: 2em; /* tamanho reduzido */
             color: #FFD700; /* dourado */
+        }
+
+        #start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #character-card {
+            width: 150px;
+            height: 200px;
+            background-color: #333333; /* preto */
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #FFFFFF; /* branco */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            position: relative;
+            animation: rotate 3s linear infinite; /* animação de rotação */
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .emoji {
+            font-size: 50px; /* tamanho reduzido */
+        }
+
+        #play-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1em; /* tamanho reduzido */
+            color: white;
+            background-color: #4CAF50; /* verde */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #play-button:hover {
+            background-color: #45a049; /* verde mais escuro */
         }
 
         #game-board {
             display: grid;
-            grid-template-columns: repeat(4, 120px); /* tamanho reduzido */
+            grid-template-columns: repeat(4, 120px); /* duas fileiras */
             grid-gap: 15px;
             margin-top: 20px;
             padding: 20px;
@@ -119,18 +173,28 @@
     </style>
 </head>
 <body>
-    <h1>Jogo Cara a Cara</h1>
-    <div id="game-board"></div>
-    <div id="message"></div>
-    <div id="controls">
-        <label for="question">Faça uma pergunta: </label>
-        <input type="text" id="question" placeholder="Exemplo: A pessoa tem óculos?">
-        <button id="ask-button">Perguntar</button>
-        <button id="guess-button">Adivinhar</button>
-        <div id="guess-section" class="hidden">
-            <label for="guess">Quem é a pessoa? </label>
-            <input type="text" id="guess" placeholder="Nome do personagem">
-            <button id="confirm-guess">Confirmar Adivinhação</button>
+    <div id="start-screen">
+        <h1>Bem-vindo ao Jogo Cara a Cara</h1>
+        <div id="character-card">
+            <div class="emoji">🎭</div>
+            <div>Quem sou eu?</div>
+        </div>
+        <button id="play-button">Iniciar Jogo</button>
+    </div>
+    <div id="game" class="hidden">
+        <div id="game-board"></div>
+        <div id="message"></div>
+        <div id="controls">
+            <label for="question">Faça uma pergunta: </label>
+            <input type="text" id="question" placeholder="Exemplo: A pessoa tem óculos?">
+            <button id="ask-button">Perguntar</button>
+            <button id="guess-button">Adivinhar</button>
+            <div id="guess-section" class="hidden">
+                <label for="guess">Quem é a pessoa? </label>
+                <input type="text" id="guess" placeholder="Nome do personagem">
+                <button id="confirm-guess">Confirmar Adivinhação</button>
+            </div>
+            <button id="reset-button" class="hidden">Reiniciar Jogo</button> <!-- Botão para reiniciar o jogo -->
         </div>
     </div>
     <script>
@@ -146,22 +210,28 @@
                 { name: "Giovana", glasses: false, hat: false, beard: false, gender: "menina", hairColor: "loiro", eyeColor: "castanho escuro", job: "Fotógrafa", emoji: "👩‍🦰" },
                 { name: "Nicolli", glasses: true, hat: false, beard: false, gender: "menina", hairColor: "castanho", eyeColor: "castanho claro", job: "Cientista", emoji: "👧" },
                 { name: "Vitor", glasses: true, hat: true, beard: true, gender: "homem", hairColor: "preto", eyeColor: "castanho claro", job: "Advogado", emoji: "👨‍🎓" },
-                { name: "Juliane", glasses: false, hat: false, beard: false, gender: "menina", hairColor: "castanho", eyeColor: "castanho", job: "Arquitetura", emoji: "👩‍🔬" },
-                { name: "Miguel", glasses: true, hat: true, beard: true, gender: "homem", hairColor: "preto", eyeColor: "preto", job: "Cozinheiro", emoji: "🧑" },
-                { name: "Gabi", glasses: true, hat: false, beard: false, gender: "menina", hairColor: "loiro", eyeColor: "castanho claro", job: "Estudante", emoji: "👩‍🎨" },
-                { name: "Luan", glasses: false, hat: true, beard: true, gender: "homem", hairColor: "castanho", eyeColor: "verde", job: "Engenheiro", emoji: "🧑‍🏭" }
+                { name: "Juliane", glasses: false, hat: true, beard: false, gender: "menina", hairColor: "ruivo", eyeColor: "verde", job: "Engenheira", emoji: "👩‍🔧" },
+                { name: "Matheus", glasses: true, hat: false, beard: false, gender: "homem", hairColor: "castanho", eyeColor: "azul", job: "Músico", emoji: "🎸" },
             ];
 
+            let randomCharacter = characters[Math.floor(Math.random() * characters.length)];
             let eliminatedCharacters = [];
-            const gameBoard = document.getElementById('game-board');
             const messageDisplay = document.getElementById('message');
+            const gameBoard = document.getElementById('game-board');
             const questionInput = document.getElementById('question');
             const askButton = document.getElementById('ask-button');
             const guessButton = document.getElementById('guess-button');
             const guessSection = document.getElementById('guess-section');
             const confirmGuessButton = document.getElementById('confirm-guess');
+            const resetButton = document.getElementById('reset-button');
+            const startScreen = document.getElementById('start-screen');
+            const game = document.getElementById('game');
 
-            let randomCharacter = characters[Math.floor(Math.random() * characters.length)];
+            document.getElementById('play-button').addEventListener('click', () => {
+                startScreen.classList.add('hidden');
+                game.classList.remove('hidden');
+                resetGame();
+            });
 
             function createBoard() {
                 gameBoard.innerHTML = '';
@@ -169,10 +239,9 @@
                     const card = document.createElement('div');
                     card.classList.add('character-card');
                     card.innerHTML = `
-                        <div class="emoji">${character.emoji}</div>
+                        <div>${character.emoji}</div>
                         <div>${character.name}</div>
                         <div class="character-details">
-                            <p>Gênero: ${character.gender}</p>
                             <p>Cor do cabelo: ${character.hairColor}</p>
                             <p>Cor do olho: ${character.eyeColor}</p>
                             <p>Óculos: ${character.glasses ? 'Sim' : 'Não'}</p>
@@ -221,8 +290,10 @@
                 const guess = document.getElementById('guess').value.toLowerCase();
                 if (guess === randomCharacter.name.toLowerCase()) {
                     displayMessage(`Parabéns! Você adivinhou que a pessoa é ${randomCharacter.name}.`);
+                    resetButton.classList.remove('hidden');
                 } else {
                     displayMessage(`Errou! A pessoa era ${randomCharacter.name}.`);
+                    resetButton.classList.remove('hidden');
                 }
                 resetGame();
             }
@@ -238,11 +309,8 @@
                 eliminatedCharacters = [];
                 createBoard();
                 displayMessage('Jogo reiniciado. Faça uma pergunta!');
+                resetButton.classList.add('hidden'); // Esconde o botão de reiniciar
             }
-
-            askButton.addEventListener('click', askQuestion);
-            guessButton.addEventListener('click', makeGuess);
-            confirmGuessButton.addEventListener('click', confirmGuess);
 
             // Adicionando evento de clique em cada cartão para eliminar o personagem
             gameBoard.addEventListener('click', (event) => {
@@ -253,8 +321,14 @@
                 }
             });
 
+            askButton.addEventListener('click', askQuestion);
+            guessButton.addEventListener('click', makeGuess);
+            confirmGuessButton.addEventListener('click', confirmGuess);
+            resetButton.addEventListener('click', resetGame);
+
             createBoard();
         });
     </script>
 </body>
 </html>
+
