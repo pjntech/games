@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Minas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('https://img.freepik.com/fotos-gratis/fundo-verde-de-grama-falsa_53876-16313.jpg?w=996&t=st=1727109944~exp=1727110544~hmac=b5a7cb202eacd42699729e9630aea1d0857310588c1af479f05b6395a4732533');
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #game-container, #loading-screen {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            position: relative;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        #loading-screen {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .loader {
+            width: 48px;
+            height: 48px;
+            margin: auto;
+            position: relative;
+        }
+        .loader:before {
+            content: '';
+            width: 48px;
+            height: 5px;
+            background: #f0808050;
+            position: absolute;
+            top: 60px;
+            left: 0;
+            border-radius: 50%;
+            animation: shadow324 0.5s linear infinite;
+        }
+        .loader:after {
+            content: '';
+            width: 100%;
+            height: 100%;
+            background: #f08080;
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-radius: 4px;
+            animation: jump7456 0.5s linear infinite;
+        }
+        @keyframes jump7456 {
+            15% {
+                border-bottom-right-radius: 3px;
+            }
+            25% {
+                transform: translateY(9px) rotate(22.5deg);
+            }
+            50% {
+                transform: translateY(18px) scale(1, .9) rotate(45deg);
+                border-bottom-right-radius: 40px;
+            }
+            75% {
+                transform: translateY(9px) rotate(67.5deg);
+            }
+            100% {
+                transform: translateY(0) rotate(90deg);
+            }
+        }
+        @keyframes shadow324 {
+            0%, 100% {
+                transform: scale(1, 1);
+            }
+            50% {
+                transform: scale(1.2, 1);
+            }
+        }
+        select, input[type="submit"] {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            border: 2px solid #4CAF50;
+            border-radius: 4px;
+        }
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+        table {
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+        td {
+            width: 30px;
+            height: 30px;
+            border: 2px solid #4CAF50;
+            background-color: #b2f2a1;
+            text-align: center;
+            font-size: 16px;
+            cursor: pointer;
+            position: relative;
+        }
+        td.clicked {
+            background-color: #7dc97a;
+            color: white;
+        }
+        td.mine {
+            background-color: #ff3333;
+            color: white;
+            font-size: 24px;
+        }
+        td.flag::after {
+            content: "🚩";
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Jogo de Minas</h1>
+        <div id="form-container">
+            <label for="difficulty">Dificuldade:</label>
+            <select id="difficulty">
+                <option value="easy">Fácil</option>
+                <option value="medium">Médio</option>
+                <option value="hard">Difícil</option>
+            </select>
+            <input type="submit" value="Iniciar Jogo">
+        </div>
+        <div id="score-board">
+            <p id="status"></p>
+        </div>
+        <div id="game-board"></div>
+    </div>
+    <div id="loading-screen">
+        <h1>Carregando...</h1>
+        <div class="loader"></div>
+    </div>
+    <script>
+        var gameBoard, width, height, minesCount, flagsRemaining, gameOver = false;
+        var statusElement = document.getElementById("status");
+        var loadingScreen = document.getElementById("loading-screen");
+
+        document.querySelector("input[type='submit']").addEventListener("click", function(event) {
+            event.preventDefault();
+            loadingScreen.style.display = "flex";
+            document.getElementById("form-container").style.display = "none"; // Esconder a tela de dificuldade
+            iniciarJogo();
+        });
+
+        function iniciarJogo() {
+            var difficulty = document.getElementById("difficulty").value;
+            switch (difficulty) {
+                case 'easy':
+                    width = 6;
+                    height = 6;
+                    minesCount = 10;
+                    break;
+                case 'medium':
+                    width = 12;
+                    height = 12;
+                    minesCount = 40;
+                    break;
+                case 'hard':
+                    width = 18;
+                    height = 18;
+                    minesCount = 99;
+                    break;
+            }
+            flagsRemaining = minesCount;
+            gameOver = false;
+            statusElement.textContent = "";
+
+            gameBoard = [];
+            for (var i = 0; i < height; i++) {
+                gameBoard[i] = [];
+                for (var j = 0; j < width; j++) {
+                    gameBoard[i][j] = 0;
+                }
+            }
+
+            for (var i = 0; i < minesCount; i++) {
+                var randomX, randomY;
+                do {
+                    randomX = Math.floor(Math.random() * width);
+                    randomY = Math.floor(Math.random() * height);
+                } while (gameBoard[randomY][randomX] === -1);
+                gameBoard[randomY][randomX] = -1;
+            }
+
+            desenharTabuleiro();
+        }
+
+        function desenharTabuleiro() {
+            var gameBoardElement = document.getElementById("game-board");
+            gameBoardElement.innerHTML = "";
+            var tableHtml = "<table>";
+            for (var i = 0; i < height; i++) {
+                tableHtml += "<tr>";
+                for (var j = 0; j < width; j++) {
+                    tableHtml += `<td x="${j}" y="${i}"></td>`; // Corrigido
+                }
+                tableHtml += "</tr>";
+            }
+            tableHtml += "</table>";
+            gameBoardElement.innerHTML = tableHtml;
+
+            var cells = document.querySelectorAll("#game-board td");
+            cells.forEach(cell => {
+                cell.addEventListener("click", handleLeftClick);
+                cell.addEventListener("contextmenu", handleRightClick);
+            });
+
+            loadingScreen.style.display = "none"; // Oculta a tela de carregamento
+        }
+
+        function handleLeftClick(event) {
+            if (gameOver) return;
+            var cell = event.target;
+            var x = parseInt(cell.getAttribute("x"));
+            var y = parseInt(cell.getAttribute("y"));
+            
+            if (cell.classList.contains("flag")) return;
+
+            if (gameBoard[y][x] === -1) {
+                cell.classList.add("mine");
+                cell.textContent = "💣";
+                endGame(false);
+            } else {
+                var count = countMinesAround(x, y);
+                cell.textContent = count > 0 ? count : "";
+                cell.classList.add("clicked");
+                if (count === 0) openArea(x, y);
+            }
+        }
+
+        function handleRightClick(event) {
+            event.preventDefault();
+            if (gameOver) return;
+            var cell = event.target;
+
+            if (cell.classList.contains("clicked")) return;
+
+            if (cell.classList.contains("flag")) {
+                cell.classList.remove("flag");
+                flagsRemaining++;
+            } else {
+                if (flagsRemaining > 0) {
+                    cell.classList.add("flag");
+                    flagsRemaining--;
+                }
+            }
+        }
+
+        function countMinesAround(x, y) {
+            var count = 0;
+            for (var i = -1; i <= 1; i++) {
+                for (var j = -1; j <= 1; j++) {
+                    var newX = x + j;
+                    var newY = y + i;
+                    if (newX >= 0 && newX < width && newY >= 0 && newY < height) {
+                        if (gameBoard[newY][newX] === -1) {
+                            count++;
+                        }
+                    }
+                }
+            }
+            return count;
+        }
+
+        function openArea(x, y) {
+            for (var i = -1; i <= 1; i++) {
+                for (var j = -1; j <= 1; j++) {
+                    var newX = x + j;
+                    var newY = y + i;
+                    var cell = document.querySelector(`#game-board td[x='${newX}'][y='${newY}']`); // Corrigido
+                    if (cell && !cell.classList.contains("clicked") && !cell.classList.contains("flag")) {
+                        var count = countMinesAround(newX, newY);
+                        cell.textContent = count > 0 ? count : "";
+                        cell.classList.add("clicked");
+                        if (count === 0) openArea(newX, newY);
+                    }
+                }
+            }
+        }
+
+        function endGame(victory) {
+            gameOver = true;
+            statusElement.textContent = victory ? "Você ganhou!" : "Você perdeu! Redirecionando...";
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
